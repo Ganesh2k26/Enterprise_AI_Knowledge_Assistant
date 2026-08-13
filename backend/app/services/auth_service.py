@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-import asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +16,7 @@ from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.auth import AuthResponse, TokenPair
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserRead
 
 
 class AuthService:
@@ -35,7 +34,7 @@ class AuthService:
     @staticmethod
     def issue_auth_response(user: User) -> AuthResponse:
         tokens = AuthService.issue_tokens(user)
-        return AuthResponse(user=user, **tokens.model_dump())
+        return AuthResponse(user=UserRead.model_validate(user), **tokens.model_dump())
 
     async def register(self, payload: UserCreate) -> User:
         existing = await self.users.get_by_email(payload.email)
@@ -50,7 +49,7 @@ class AuthService:
         self.db.add(org)
         await self.db.flush()
 
-        hashed_password = await asyncio.to_thread(hash_password, payload.password)
+        hashed_password = hash_password(payload.password)
         user = User(
             email=payload.email,
             hashed_password=hashed_password,
@@ -69,11 +68,7 @@ class AuthService:
 
     async def authenticate(self, email: str, password: str) -> User:
         user = await self.users.get_by_email(email)
-        if not user:
-            raise UnauthorizedError("Incorrect email or password.")
-
-        valid = await asyncio.to_thread(verify_password, password, user.hashed_password)
-        if not valid:
+        if not user or not verify_password(password, user.hashed_password):
             raise UnauthorizedError("Incorrect email or password.")
         if not user.is_active:
             raise UnauthorizedError("This account has been deactivated.")

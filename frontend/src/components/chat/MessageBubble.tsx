@@ -12,7 +12,6 @@ export default function MessageBubble({
   role,
   content,
   citations,
-  confidence,
   isStreaming,
   isLatestAssistant,
   onRegenerate,
@@ -21,7 +20,6 @@ export default function MessageBubble({
   role: "user" | "assistant";
   content: string;
   citations?: Citation[];
-  confidence?: number | null;
   isStreaming?: boolean;
   isLatestAssistant?: boolean;
   onRegenerate?: () => void;
@@ -103,11 +101,6 @@ export default function MessageBubble({
                 {c.page_number ? ` · p.${c.page_number}` : ""}
               </span>
             ))}
-            {confidence != null && (
-              <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[11px] text-emerald-400">
-                {Math.round(confidence * 100)}% confidence
-              </span>
-            )}
           </div>
         )}
 

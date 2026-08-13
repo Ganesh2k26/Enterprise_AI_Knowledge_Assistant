@@ -182,7 +182,6 @@ export default function ChatPage() {
                 role={m.role as "user" | "assistant"}
                 content={m.content}
                 citations={m.citations}
-                confidence={m.confidence_score}
                 isLatestAssistant={m.id === lastAssistantId}
                 onRegenerate={handleRegenerate}
               />

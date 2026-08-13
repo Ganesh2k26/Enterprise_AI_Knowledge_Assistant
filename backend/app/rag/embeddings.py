@@ -1,11 +1,12 @@
 """
 Local embeddings via SentenceTransformers (BAAI/bge-small-en-v1.5) -- no
 paid embedding API, no network call per request. The model is loaded once
-per process (lazy singleton) and inference is offloaded to a thread so it
-never blocks the async event loop.
+per process (lazy singleton) and inference is offloaded to a dedicated thread
+pool so auth requests never block behind model loading.
 """
 import asyncio
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from sentence_transformers import SentenceTransformer
 
@@ -14,6 +15,7 @@ from app.core.logging_config import logger
 
 _model: SentenceTransformer | None = None
 _model_lock = threading.Lock()
+_EMBED_EXECUTOR = ThreadPoolExecutor(max_workers=1, thread_name_prefix="embeddings")
 
 # bge models recommend prefixing queries (but not documents) with an instruction
 # for retrieval tasks -- this measurably improves recall for this model family.
@@ -38,19 +40,24 @@ def _embed_sync(texts: list[str], is_query: bool) -> list[list[float]]:
     return vectors.tolist()
 
 
+async def _run_embed(texts: list[str], is_query: bool) -> list[list[float]]:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_EMBED_EXECUTOR, _embed_sync, texts, is_query)
+
+
 async def embed_texts(texts: list[str]) -> list[list[float]]:
     """Batch-embed document chunks (no query instruction prefix)."""
     if not texts:
         return []
-    return await asyncio.to_thread(_embed_sync, texts, False)
+    return await _run_embed(texts, False)
 
 
 async def embed_query(text: str) -> list[float]:
     """Embed a single search query (with the bge retrieval instruction prefix)."""
-    vectors = await asyncio.to_thread(_embed_sync, [text], True)
+    vectors = await _run_embed([text], True)
     return vectors[0]
 
 
-async def warmup_embedding_model() -> None:
-    """Load the embedding model at startup so the first chat is not delayed."""
-    await asyncio.to_thread(_get_model)
+def warmup_embedding_model() -> None:
+    """Load the embedding model on a background thread at startup."""
+    _EMBED_EXECUTOR.submit(_get_model)
