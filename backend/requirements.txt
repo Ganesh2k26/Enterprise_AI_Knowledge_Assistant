@@ -1,0 +1,60 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- Config & validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- Database (MySQL 8) ---
+sqlalchemy==2.0.36
+aiomysql==0.2.0
+pymysql==1.1.1          # sync driver used by Alembic tooling where needed
+alembic==1.14.0
+cryptography==44.0.0     # required by PyMySQL for MySQL 8 caching_sha2_password auth
+
+# --- Auth & security ---
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+
+# --- Redis / rate limiting / token rotation ---
+redis==5.2.1
+
+# --- LLM (Gemini -- chat generation only) ---
+google-genai==0.5.0
+
+# --- Local embeddings (no paid API) ---
+sentence-transformers==3.3.1
+torch==2.6.0
+
+# --- Vector store ---
+chromadb==0.5.23
+
+# --- Document parsing ---
+pdfplumber==0.11.4
+python-docx==1.1.2
+openpyxl==3.1.5
+python-pptx==1.0.2
+tiktoken==0.8.0
+
+# --- OCR ---
+pymupdf==1.25.1
+easyocr==1.7.2
+pillow==11.0.0
+numpy==2.2.6
+
+# --- Observability ---
+python-json-logger==2.0.7
+prometheus-fastapi-instrumentator==7.0.0
+
+# --- Testing & quality ---
+pytest==8.3.4
+pytest-asyncio==0.25.1
+httpx==0.28.1
+aiosqlite==0.20.0
+black==24.10.0
+ruff==0.8.4
+mypy==1.14.0
