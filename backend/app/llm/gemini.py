@@ -51,9 +51,10 @@ class GeminiProvider(LLMProvider):
         )
 
         try:
-            async for chunk in await client.aio.models.generate_content_stream(
+            stream = client.aio.models.generate_content_stream(
                 model=settings.GEMINI_CHAT_MODEL, contents=contents, config=config
-            ):
+            )
+            async for chunk in stream:
                 if chunk.text:
                     yield chunk.text
         except Exception as exc:  # pragma: no cover - network/SDK errors
