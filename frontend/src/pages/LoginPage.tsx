@@ -18,10 +18,8 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const { data: tokens } = await authApi.login({ email, password });
-      // Pass token explicitly — interceptor only sees Redux after setCredentials.
-      const { data: user } = await authApi.me(tokens.access_token);
-      dispatch(setCredentials({ user, accessToken: tokens.access_token, refreshToken: tokens.refresh_token }));
+      const { data } = await authApi.login({ email, password });
+      dispatch(setCredentials({ user: data.user, accessToken: data.access_token, refreshToken: data.refresh_token }));
       navigate("/");
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Unable to sign in. Check your credentials.");

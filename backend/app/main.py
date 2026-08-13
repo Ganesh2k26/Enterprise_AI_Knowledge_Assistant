@@ -1,4 +1,5 @@
 """FastAPI application entrypoint."""
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -20,7 +21,7 @@ async def lifespan(app: FastAPI):
     configure_logging()
     ensure_directories()
     await init_database()
-    await warmup_embedding_model()
+    asyncio.create_task(warmup_embedding_model())
     logger.info(f"Starting {settings.APP_NAME} in {settings.ENVIRONMENT} mode")
     yield
     logger.info("Shutting down")

@@ -19,6 +19,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.path.startswith("/health") or request.url.path.startswith("/docs"):
             return await call_next(request)
+        if request.url.path.startswith("/api/v1/auth"):
+            return await call_next(request)
 
         client_id = request.client.host if request.client else "unknown"
         bucket = int(time.time() // 60)

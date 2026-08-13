@@ -39,10 +39,23 @@ api.interceptors.response.use(
 );
 
 // --- Auth ---
+export interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    email: string;
+    full_name: string;
+    role: string;
+    organization_id: string;
+  };
+}
+
 export const authApi = {
   register: (payload: { email: string; password: string; full_name: string; organization_name: string }) =>
-    api.post("/auth/register", payload),
-  login: (payload: { email: string; password: string }) => api.post("/auth/login", payload),
+    api.post<AuthResponse>("/auth/register", payload),
+  login: (payload: { email: string; password: string }) => api.post<AuthResponse>("/auth/login", payload),
   me: (accessToken?: string) =>
     api.get("/users/me", accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined),
 };

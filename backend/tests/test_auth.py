@@ -11,13 +11,17 @@ async def test_register_and_login(client):
     }
     r = await client.post("/api/v1/auth/register", json=payload)
     assert r.status_code == 201
-    assert r.json()["email"] == payload["email"]
+    body = r.json()
+    assert body["user"]["email"] == payload["email"]
+    assert "access_token" in body
+    assert "refresh_token" in body
 
     r = await client.post("/api/v1/auth/login", json={"email": payload["email"], "password": payload["password"]})
     assert r.status_code == 200
     body = r.json()
     assert "access_token" in body
     assert "refresh_token" in body
+    assert body["user"]["email"] == payload["email"]
 
 
 @pytest.mark.asyncio

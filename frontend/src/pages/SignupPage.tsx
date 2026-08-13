@@ -36,10 +36,8 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await authApi.register(form);
-      const { data: tokens } = await authApi.login({ email: form.email, password: form.password });
-      const { data: user } = await authApi.me(tokens.access_token);
-      dispatch(setCredentials({ user, accessToken: tokens.access_token, refreshToken: tokens.refresh_token }));
+      const { data } = await authApi.register(form);
+      dispatch(setCredentials({ user: data.user, accessToken: data.access_token, refreshToken: data.refresh_token }));
       navigate("/");
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Unable to create your account.");

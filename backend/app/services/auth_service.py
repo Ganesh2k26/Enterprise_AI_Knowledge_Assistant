@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +16,7 @@ from app.core.token_blacklist import is_refresh_token_revoked, revoke_refresh_to
 from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import TokenPair
+from app.schemas.auth import AuthResponse, TokenPair
 from app.schemas.user import UserCreate
 
 
@@ -23,6 +24,18 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.users = UserRepository(db)
+
+    @staticmethod
+    def issue_tokens(user: User) -> TokenPair:
+        subject = str(user.id)
+        access_token = create_access_token(subject)
+        refresh_token, _jti = create_refresh_token(subject)
+        return TokenPair(access_token=access_token, refresh_token=refresh_token)
+
+    @staticmethod
+    def issue_auth_response(user: User) -> AuthResponse:
+        tokens = AuthService.issue_tokens(user)
+        return AuthResponse(user=user, **tokens.model_dump())
 
     async def register(self, payload: UserCreate) -> User:
         existing = await self.users.get_by_email(payload.email)
@@ -35,11 +48,12 @@ class AuthService:
 
         org = Organization(name=payload.organization_name)
         self.db.add(org)
-        await self.db.flush()  # get org.id without committing yet
+        await self.db.flush()
 
+        hashed_password = await asyncio.to_thread(hash_password, payload.password)
         user = User(
             email=payload.email,
-            hashed_password=hash_password(payload.password),
+            hashed_password=hashed_password,
             full_name=payload.full_name,
             role=UserRole.OWNER,
             organization_id=org.id,
@@ -49,20 +63,25 @@ class AuthService:
         await self.db.refresh(user)
         return user
 
+    async def register_and_authenticate(self, payload: UserCreate) -> AuthResponse:
+        user = await self.register(payload)
+        return self.issue_auth_response(user)
+
     async def authenticate(self, email: str, password: str) -> User:
         user = await self.users.get_by_email(email)
-        if not user or not verify_password(password, user.hashed_password):
+        if not user:
+            raise UnauthorizedError("Incorrect email or password.")
+
+        valid = await asyncio.to_thread(verify_password, password, user.hashed_password)
+        if not valid:
             raise UnauthorizedError("Incorrect email or password.")
         if not user.is_active:
             raise UnauthorizedError("This account has been deactivated.")
         return user
 
-    @staticmethod
-    def issue_tokens(user: User) -> TokenPair:
-        subject = str(user.id)
-        access_token = create_access_token(subject)
-        refresh_token, _jti = create_refresh_token(subject)
-        return TokenPair(access_token=access_token, refresh_token=refresh_token)
+    async def login(self, email: str, password: str) -> AuthResponse:
+        user = await self.authenticate(email, password)
+        return self.issue_auth_response(user)
 
     async def refresh(self, refresh_token: str) -> TokenPair:
         """
