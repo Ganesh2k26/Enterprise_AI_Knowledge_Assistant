@@ -1,19 +1,18 @@
 """
-Sliding-window rate limiter backed by Redis. Falls back to allowing all
-requests if Redis is unreachable, so a Redis outage degrades gracefully
-instead of taking the whole API down.
+Sliding-window rate limiter backed by Redis. Falls back to an in-memory
+counter when Redis is unreachable so local dev stays fast without a Redis
+service running.
 """
 import time
 
-import redis.asyncio as redis
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from app.core.config import settings
-from app.core.logging_config import logger
+from app.core.redis_client import get_redis, is_redis_available
 
-_redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
+_local_counts: dict[str, int] = {}
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -22,15 +21,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_id = request.client.host if request.client else "unknown"
-        key = f"ratelimit:{client_id}:{int(time.time() // 60)}"
+        bucket = int(time.time() // 60)
+        key = f"ratelimit:{client_id}:{bucket}"
 
-        try:
-            count = await _redis.incr(key)
-            if count == 1:
-                await _redis.expire(key, 60)
-            if count > settings.RATE_LIMIT_PER_MINUTE:
-                return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Try again shortly."})
-        except Exception as exc:
-            logger.warning(f"Rate limiter unavailable, allowing request: {exc}")
+        if await is_redis_available():
+            try:
+                redis = get_redis()
+                count = await redis.incr(key)
+                if count == 1:
+                    await redis.expire(key, 60)
+            except Exception:
+                count = _local_counts.get(key, 0) + 1
+                _local_counts[key] = count
+        else:
+            count = _local_counts.get(key, 0) + 1
+            _local_counts[key] = count
+            if len(_local_counts) > 500:
+                _local_counts.clear()
+
+        if count > settings.RATE_LIMIT_PER_MINUTE:
+            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Try again shortly."})
 
         return await call_next(request)

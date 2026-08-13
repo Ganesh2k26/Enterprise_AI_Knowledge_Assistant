@@ -11,8 +11,26 @@ export function useChatStream() {
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const pendingTextRef = useRef("");
+  const rafRef = useRef<number | null>(null);
+
+  const flushStreamingText = useCallback(() => {
+    rafRef.current = null;
+    setStreamingText(pendingTextRef.current);
+  }, []);
+
+  const appendStreamingText = useCallback(
+    (chunk: string) => {
+      pendingTextRef.current += chunk;
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(flushStreamingText);
+      }
+    },
+    [flushStreamingText]
+  );
 
   const consume = useCallback(async (url: string, body: unknown, onDone: (fullText: string) => void) => {
+    pendingTextRef.current = "";
     setStreamingText("");
     setIsStreaming(true);
     const controller = new AbortController();
@@ -34,6 +52,7 @@ export function useChatStream() {
       } catch {
         /* ignore parse errors */
       }
+      pendingTextRef.current = detail;
       setStreamingText(detail);
       setIsStreaming(false);
       onDone(detail);
@@ -60,14 +79,20 @@ export function useChatStream() {
         if (evt.startsWith("data: ")) {
           const chunk = evt.slice(6).replace(/\\n/g, "\n");
           full += chunk;
-          setStreamingText((prev) => prev + chunk);
+          appendStreamingText(chunk);
         }
       }
     }
 
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    pendingTextRef.current = full;
+    setStreamingText(full);
     setIsStreaming(false);
     onDone(full);
-  }, []);
+  }, [appendStreamingText]);
 
   const send = useCallback(
     (sessionId: string, message: string, onDone: (fullText: string) => void) =>
@@ -83,6 +108,10 @@ export function useChatStream() {
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     setIsStreaming(false);
   }, []);
 

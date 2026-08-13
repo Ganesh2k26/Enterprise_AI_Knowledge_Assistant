@@ -30,3 +30,10 @@ class ChatRepository(BaseRepository[ChatSession]):
         await self.db.commit()
         await self.db.refresh(msg)
         return msg
+
+    async def stage_message(self, **kwargs) -> ChatMessage:
+        """Persist a message without committing so chat generation can start sooner."""
+        msg = ChatMessage(**kwargs)
+        self.db.add(msg)
+        await self.db.flush()
+        return msg

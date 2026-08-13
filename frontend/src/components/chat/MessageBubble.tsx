@@ -59,30 +59,34 @@ export default function MessageBubble({
             isUser ? "bg-signal text-white" : "bg-white/70 text-ink-900 dark:bg-ink-800/80 dark:text-paper-100"
           }`}
         >
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code({ className, children, ...props }: any) {
-                const match = /language-(\w+)/.exec(className || "");
-                return match ? (
-                  <SyntaxHighlighter
-                    style={oneDark as any}
-                    language={match[1]}
-                    PreTag="div"
-                    customStyle={{ borderRadius: "0.5rem", fontSize: "0.8rem" }}
-                  >
-                    {String(children).replace(/\n$/, "")}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className="rounded bg-black/20 px-1 py-0.5 text-xs" {...props}>
-                    {children}
-                  </code>
-                );
-              },
-            }}
-          >
-            {content}
-          </ReactMarkdown>
+          {isStreaming ? (
+            <p className="whitespace-pre-wrap">{content}</p>
+          ) : (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({ className, children, ...props }: any) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return match ? (
+                    <SyntaxHighlighter
+                      style={oneDark as any}
+                      language={match[1]}
+                      PreTag="div"
+                      customStyle={{ borderRadius: "0.5rem", fontSize: "0.8rem" }}
+                    >
+                      {String(children).replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className="rounded bg-black/20 px-1 py-0.5 text-xs" {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {content}
+            </ReactMarkdown>
+          )}
           {isStreaming && <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-current align-text-bottom" />}
         </div>
 

@@ -12,6 +12,7 @@ from app.database.init_db import ensure_directories, init_database
 from app.middleware.error_handler import register_error_handlers
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
+from app.rag.embeddings import warmup_embedding_model
 
 
 @asynccontextmanager
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
     configure_logging()
     ensure_directories()
     await init_database()
+    await warmup_embedding_model()
     logger.info(f"Starting {settings.APP_NAME} in {settings.ENVIRONMENT} mode")
     yield
     logger.info("Shutting down")

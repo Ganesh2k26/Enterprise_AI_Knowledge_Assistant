@@ -17,7 +17,7 @@ from app.rag.prompt_builder import average_confidence, build_citations, build_sy
 from app.rag.retriever import retrieve
 from app.repositories.chat_repository import ChatRepository
 
-MAX_HISTORY_TURNS = 6
+MAX_HISTORY_TURNS = 4
 
 
 def _suggest_follow_ups(citations: list[dict]) -> list[str]:
@@ -64,7 +64,10 @@ class ChatService:
         history = history_override
         if history is None:
             history = [
-                {"role": "user" if m.role == MessageRole.USER else "model", "text": m.content}
+                {
+                    "role": "user" if m.role == MessageRole.USER else "model",
+                    "text": m.content[:1500],
+                }
                 for m in session.messages[-MAX_HISTORY_TURNS:]
             ]
 
@@ -101,7 +104,7 @@ class ChatService:
         if not session or session.user_id != user_id:
             raise NotFoundError("Chat session not found.")
 
-        await self.repo.add_message(session_id=session_id, role=MessageRole.USER, content=message)
+        await self.repo.stage_message(session_id=session_id, role=MessageRole.USER, content=message)
         async for token in self._generate_and_persist(session, organization_id, message):
             yield token
 

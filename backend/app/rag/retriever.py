@@ -7,6 +7,7 @@ Pipeline: embed query -> over-fetch from Chroma -> similarity threshold ->
 hybrid re-rank (semantic + lexical) -> deduplicate near-identical chunks ->
 compress to MAX_CONTEXT_TOKENS -> return top_k.
 """
+import asyncio
 import re
 from dataclasses import dataclass
 
@@ -85,12 +86,13 @@ async def retrieve(
     top_k: int | None = None,
 ) -> list[RetrievedChunk]:
     top_k = top_k or settings.TOP_K_RESULTS
-    query_embedding = await embed_query(query)
     query_terms = _tokenize(query)
-
     store = VectorStore(organization_id)
     where = {"document_id": {"$in": document_ids}} if document_ids else None
-    raw = store.query(query_embedding, top_k=max(top_k * settings.OVER_FETCH_MULTIPLIER, top_k), where=where)
+    fetch_k = max(top_k * settings.OVER_FETCH_MULTIPLIER, top_k)
+
+    query_embedding = await embed_query(query)
+    raw = await asyncio.to_thread(store.query, query_embedding, fetch_k, where)
 
     candidates: list[RetrievedChunk] = []
     if raw["ids"] and raw["ids"][0]:

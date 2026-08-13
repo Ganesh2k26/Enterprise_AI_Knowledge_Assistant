@@ -49,3 +49,8 @@ async def embed_query(text: str) -> list[float]:
     """Embed a single search query (with the bge retrieval instruction prefix)."""
     vectors = await asyncio.to_thread(_embed_sync, [text], True)
     return vectors[0]
+
+
+async def warmup_embedding_model() -> None:
+    """Load the embedding model at startup so the first chat is not delayed."""
+    await asyncio.to_thread(_get_model)

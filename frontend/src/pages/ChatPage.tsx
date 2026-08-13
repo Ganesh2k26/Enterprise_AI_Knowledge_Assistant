@@ -47,8 +47,8 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [session?.messages, streamingText]);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: isStreaming ? "auto" : "smooth" });
+  }, [session?.messages, streamingText, isStreaming]);
 
   const handleSend = async () => {
     if (!input.trim()) return;

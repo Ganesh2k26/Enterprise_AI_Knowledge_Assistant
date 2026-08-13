@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import settings
 
 engine_kwargs = {
-    "echo": settings.DEBUG,
+    # SQL echo logs every query and noticeably slows chat under load.
+    "echo": False,
     "pool_pre_ping": True,
 }
 if settings.DATABASE_URL.startswith("sqlite"):

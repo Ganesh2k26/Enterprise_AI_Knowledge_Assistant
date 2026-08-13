@@ -45,9 +45,9 @@ class GeminiProvider(LLMProvider):
         contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_message)]))
 
         config = types.GenerateContentConfig(
-            system_instruction=system_prompt,
+            system_instruction=system_prompt[:12000],
             temperature=0.3,
-            max_output_tokens=2048,
+            max_output_tokens=1024,
         )
 
         try:

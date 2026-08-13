@@ -7,6 +7,17 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          query: ["@tanstack/react-query", "@reduxjs/toolkit", "react-redux"],
+          markdown: ["react-markdown", "remark-gfm", "react-syntax-highlighter"],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {
