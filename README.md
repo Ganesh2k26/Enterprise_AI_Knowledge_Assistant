@@ -288,3 +288,13 @@ The codebase is structured for extension — e.g. add a new LLM by implementing 
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Screenshorts And Results
+<img width="1913" height="898" alt="Screenshot 2026-08-15 180730" src="https://github.com/user-attachments/assets/e4274947-90a8-416f-9937-077ea28151fc" />
+<img width="1916" height="900" alt="Screenshot 2026-08-15 180747" src="https://github.com/user-attachments/assets/e9f34e28-100f-46ca-ad76-729000d83ccc" />
+<img width="1910" height="904" alt="Screenshot 2026-08-15 180808" src="https://github.com/user-attachments/assets/fbff5190-ca09-4b71-8a08-c345942fe555" />
+<img width="1909" height="899" alt="Screenshot 2026-08-15 180824" src="https://github.com/user-attachments/assets/4b91904f-1ecb-45c5-87e0-934ecdd72d3a" />
+
+
+
+
